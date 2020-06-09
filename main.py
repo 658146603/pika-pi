@@ -2,10 +2,9 @@ import os
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as f
 import torch.utils.data
 from PIL import Image
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
 model_path = './model/model.pth'
@@ -21,10 +20,10 @@ data_transform = transforms.Compose(
 
 
 class MDataSet(Dataset):
-    def __init__(self, path, train=True, transform=None):
+    def __init__(self, path, _train=True, transform=None):
         self.path = path
         self.list = os.listdir(path)
-        self.train = train
+        self.train = _train
         if transform is None:
             self.transform = data_transform
         else:
@@ -51,8 +50,8 @@ class MDataSet(Dataset):
 
 train_dataset = MDataSet('./train', transform=data_transform)
 test_dataset = MDataSet('./test', transform=data_transform)
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=12, shuffle=True, num_workers=1)
-test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=100, shuffle=False, num_workers=1)
+train_loader = DataLoader(train_dataset, batch_size=27, shuffle=True, num_workers=1)
+test_loader = DataLoader(test_dataset, batch_size=20, shuffle=False, num_workers=1)
 
 
 class Net(nn.Module):
@@ -88,7 +87,7 @@ class Net(nn.Module):
             nn.ReLU(),
             nn.Linear(16, 2)
         )
-        self.opt = torch.optim.Adam(self.parameters())
+        self.opt = torch.optim.Adam(self.parameters(), lr=0.001)
         self.los = torch.nn.CrossEntropyLoss()
 
     def forward(self, _input):
@@ -114,16 +113,19 @@ class Net(nn.Module):
 def train():
     net = Net().cuda()
 
-    for tick in range(10):
+    for tick in range(20):
         print('-----time: {}-----'.format(tick))
         for i, (data, y) in enumerate(train_loader):
             net.train_model(data.cuda(), y.cuda())
-    net.eval()
-    torch.save(net.state_dict(), model_path)
+        _test(net, train_loader)
+        net.eval()
+        _test(net, test_loader)
+        torch.save(net.state_dict(), model_path)
 
 
 def test():
     t_net = Net().cuda()
+    t_net.eval()
     t_net.load_state_dict(torch.load(model_path))
     print('-----test-----')
     test_accurate = 0
@@ -131,18 +133,25 @@ def test():
         images, labels = image_label
         torch.no_grad()
         outputs = t_net.test_model(images.cuda())
-        predict = f.softmax(outputs, dim=-1)
         mm, prediction = torch.max(outputs.data, 1)
-
         print(labels)
         print(prediction)
-
         test_accurate += torch.sum(prediction.data.cuda() == labels.data.cuda())
     print(test_accurate)
-    return test_accurate
+
+
+def _test(net: Net, data: DataLoader):
+    print('-----test_train-----')
+    test_accurate = 0
+    for image_label in data:
+        images, labels = image_label
+        torch.no_grad()
+        outputs = net.test_model(images.cuda())
+        mm, prediction = torch.max(outputs.data, 1)
+        test_accurate += torch.sum(prediction.data.cuda() == labels.data.cuda())
+    print(test_accurate)
 
 
 if __name__ == '__main__':
     train()
-    accurate = test()
-
+    test()
