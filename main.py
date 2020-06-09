@@ -111,7 +111,7 @@ class Net(nn.Module):
         return self.forward(x)
 
 
-if __name__ == '__main__':
+def train():
     net = Net().cuda()
 
     for tick in range(10):
@@ -119,9 +119,10 @@ if __name__ == '__main__':
         for i, (data, y) in enumerate(train_loader):
             net.train_model(data.cuda(), y.cuda())
     net.eval()
-
     torch.save(net.state_dict(), model_path)
 
+
+def test():
     t_net = Net().cuda()
     t_net.load_state_dict(torch.load(model_path))
     print('-----test-----')
@@ -138,3 +139,10 @@ if __name__ == '__main__':
 
         test_accurate += torch.sum(prediction.data.cuda() == labels.data.cuda())
     print(test_accurate)
+    return test_accurate
+
+
+if __name__ == '__main__':
+    train()
+    accurate = test()
+
