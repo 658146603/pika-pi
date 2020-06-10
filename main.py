@@ -51,7 +51,7 @@ class MDataSet(Dataset):
 train_dataset = MDataSet('./train', transform=data_transform)
 test_dataset = MDataSet('./test', transform=data_transform)
 train_loader = DataLoader(train_dataset, batch_size=27, shuffle=True, num_workers=1)
-test_loader = DataLoader(test_dataset, batch_size=20, shuffle=False, num_workers=1)
+test_loader = DataLoader(test_dataset, batch_size=20, shuffle=True, num_workers=1)
 
 
 class Net(nn.Module):
