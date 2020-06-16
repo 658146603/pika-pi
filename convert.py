@@ -2,19 +2,19 @@ from PIL import Image
 import os
 
 
-def IsValidImage(img_path):
-    bValid = True
+def is_valid_image(img_path):
+    b_valid = True
     try:
         Image.open(img_path).verify()
     except:
-        bValid = False
-    return bValid
+        b_valid = False
+    return b_valid
 
 
-def transimg(path):
-    for filename in os.listdir(path):
-        img_path = path + '/' + filename
-        if IsValidImage(img_path):
+def trans_img(_path):
+    for filename in os.listdir(_path):
+        img_path = _path + '/' + filename
+        if is_valid_image(img_path):
             try:
                 s = img_path.rsplit(".")
                 if s[-1] == 'jpg' or s[-1] == 'jpeg' or s[-1] == 'JPG' or s[-1] == 'JPEG':
@@ -34,4 +34,4 @@ def transimg(path):
 
 if __name__ == '__main__':
     path = './test'
-    print(transimg(path))
+    print(trans_img(path))

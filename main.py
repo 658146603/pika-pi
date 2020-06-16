@@ -87,6 +87,7 @@ class Net(nn.Module):
             nn.ReLU(),
             nn.Linear(16, 2)
         )
+        # 使用Adam优化算法
         self.opt = torch.optim.Adam(self.parameters(), lr=0.001)
         self.los = torch.nn.CrossEntropyLoss()
 
@@ -104,7 +105,7 @@ class Net(nn.Module):
         self.opt.zero_grad()
         loss.backward()
         self.opt.step()
-        print("loss:", loss.item())
+        print('loss:', loss.item())
 
     def test_model(self, x):
         return self.forward(x)
@@ -112,44 +113,38 @@ class Net(nn.Module):
 
 def train():
     net = Net().cuda()
-
-    for tick in range(20):
-        print('Epoch {}/{}'.format(tick, 20 - 1))
+    ticks = 20
+    for tick in range(ticks):
+        print('Epoch {}/{}:'.format(tick, ticks - 1))
         for i, (data, y) in enumerate(train_loader):
             net.train_model(data.cuda(), y.cuda())
-        _test(net, train_loader)
+        _test('train', net, train_loader)
         net.eval()
-        _test(net, test_loader)
+        _test('test', net, test_loader)
         torch.save(net.state_dict(), model_path)
+        print()
 
 
 def test():
     t_net = Net().cuda()
     t_net.eval()
     t_net.load_state_dict(torch.load(model_path))
-    print('-----test-----')
-    test_accurate = 0
-    for image_label in test_loader:
-        images, labels = image_label
-        torch.no_grad()
-        outputs = t_net.test_model(images.cuda())
-        mm, prediction = torch.max(outputs.data, 1)
-        print(labels)
-        print(prediction)
-        test_accurate += torch.sum(prediction.data.cuda() == labels.data.cuda())
-    print(test_accurate)
+
+    print('final_test:')
+    _test('test', t_net, test_loader)
 
 
-def _test(net: Net, data: DataLoader):
-    print('-----test_train-----')
-    test_accurate = 0
+def _test(name, net: Net, data: DataLoader):
+    test_correct = 0
+    test_total = 0
     for image_label in data:
         images, labels = image_label
         torch.no_grad()
         outputs = net.test_model(images.cuda())
         mm, prediction = torch.max(outputs.data, 1)
-        test_accurate += torch.sum(prediction.data.cuda() == labels.data.cuda())
-    print(test_accurate)
+        test_correct += int(torch.sum(prediction.data.cuda() == labels.data.cuda()))
+        test_total += len(labels.data)
+    print('{}_acc: {}'.format(name, test_correct / test_total))
 
 
 if __name__ == '__main__':
